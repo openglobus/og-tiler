@@ -1,0 +1,17 @@
+.idea/
+*.iml
+.vs/
+.vscode/
+*.swp
+*~
+.DS_Store
+Thumbs.db
+
+__pycache__/
+*.py[cod]
+
+/mergeFolders
+
+temp/
+_temp_*/
+__temp__/
