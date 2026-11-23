@@ -30,7 +30,10 @@ echo ">>> TESTS"
 docker run --rm -v "$PWD":/repo -w /repo "$image" python3 -u test/cube/test_cube2tiles.py | grep -E "^(ok|FAIL|skip)"
 
 echo ">>> OPENDRONEMAP IMAGE"
-docker pull opendronemap/odm
+# Only the LAS point clouds need it, the tiler works without it
+if ! docker pull opendronemap/odm; then
+    echo "WARNING: opendronemap/odm is not pulled, las2tif.sh, las2tif_folder.sh and las2tiles.sh do not work until 'docker pull opendronemap/odm' succeeds"
+fi
 
 echo "Installed."
 echo "./tif2tiles.sh --help prints the options."

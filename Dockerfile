@@ -1,10 +1,13 @@
-FROM ubuntu:22.04 AS build
+# Both stages are on the GDAL image: the same Ubuntu and glibc, and nothing is pulled from Docker Hub
+ARG BASE_IMAGE=ghcr.io/osgeo/gdal:ubuntu-small-3.6.3
+
+FROM $BASE_IMAGE AS build
 RUN apt-get update && apt-get install -y --no-install-recommends g++ make libwebp-dev && rm -rf /var/lib/apt/lists/*
 WORKDIR /build
 COPY ./Makefile ./main.cpp ./lodepng.cpp ./lodepng.h ./
 RUN make build
 
-FROM ghcr.io/osgeo/gdal:ubuntu-small-3.6.3
+FROM $BASE_IMAGE
 LABEL maintainer="Zemledelec mgevlich@gmail.com"
 LABEL description="OpenGlobus tiles of GeoTIFFs: heights and imagery"
 WORKDIR /work
