@@ -1,0 +1,7 @@
+.git/
+.idea/
+.vscode/
+temp/
+_temp_*/
+test/
+mergeFolders

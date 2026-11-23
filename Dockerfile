@@ -1,14 +1,20 @@
+FROM ubuntu:22.04 AS build
+RUN apt-get update && apt-get install -y --no-install-recommends g++ make libwebp-dev && rm -rf /var/lib/apt/lists/*
+WORKDIR /build
+COPY ./Makefile ./main.cpp ./lodepng.cpp ./lodepng.h ./
+RUN make build
+
 FROM ghcr.io/osgeo/gdal:ubuntu-small-3.6.3
 LABEL maintainer="Zemledelec mgevlich@gmail.com"
-LABEL description="Converts heights geotiff to rgb tiles"
+LABEL description="OpenGlobus tiles of GeoTIFFs: heights and imagery"
 WORKDIR /work
-RUN apt-get update && apt-get upgrade -y
-RUN apt-get install -y --fix-missing python3-pip && pip3 install rasterio && pip3 install rio-rgbify
-RUN pip3 install opencv-python-headless && pip3 install pytest-shutil && pip3 install numpy
-RUN apt-get install -y wget
+# The package lists are taken in the same step as the packages, a cached old list has gone packages
+RUN apt-get update && apt-get upgrade -y && apt-get install -y --fix-missing python3-pip wget \
+    && rm -rf /var/lib/apt/lists/*
+# The GDAL python of the image is built with NumPy 1
+RUN pip3 install rasterio rio-rgbify "numpy<2"
 RUN wget https://download.osgeo.org/proj/vdatum/egm08_25/egm08_25.gtx
 ADD ./rgbifyff.sh .
-ADD ./mergeFolders .
-ADD ./equi2tiles.sh .
+COPY --from=build /build/mergeFolders .
+ADD ./cube2tiles.py .
 RUN cp ./egm08_25.gtx /usr/share/gdal
-RUN export GDAL_DATA=/usr/share/gdal
