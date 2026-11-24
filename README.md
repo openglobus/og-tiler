@@ -15,7 +15,7 @@ Only Docker is needed:
 
 It builds the `og-tiler` image, checks it by the tests and pulls the `opendronemap/odm` image of the LAS point clouds. Run it again after an update of the repository.
 
-`mergeFolders` is compiled from `main.cpp` in the image, no compiler is needed on the machine and the repository has no binary. To run it outside Docker, `make build` compiles it on the machine, it needs `g++`, `make` and `libwebp-dev`.
+`mergeTiles` is compiled from `main.cpp` in the image, no compiler is needed on the machine and the repository has no binary. To run it outside Docker, `make build` compiles it on the machine, it needs `g++`, `make` and `libwebp-dev`.
 
 For the development, the image and the tests alone:
 
@@ -32,7 +32,7 @@ make test
 | `tif2tiles.sh`         | the host           | Makes the tiles of GeoTIFFs, see below. `./tif2tiles.sh --help` prints the options.             |
 | `rgbifyff.sh`          | the image          | The tiles of every file and their merge, `tif2tiles.sh` runs it.                                |
 | `cube2tiles.py`        | the image          | The cube tiles of a file, `rgbifyff.sh` runs it for the cube strategies.                        |
-| `mergeFolders`         | the image          | Merges the tiles of one folder into another one, see Merge Existing Tiles.                      |
+| `mergeTiles`           | the image          | Merges the tiles of one folder into another one, see Merge Existing Tiles.                      |
 | `las2tiles.sh`         | the host           | Makes the tiles of LAS and LAZ point clouds, the same options as `tif2tiles.sh`, see LAS Point Clouds. |
 | `las2tif.sh`, `las2tif_folder.sh` | the host | A DEM GeoTIFF of a LAS point cloud, or of a folder of them, by OpenDroneMap, see LAS Point Clouds. |
 
@@ -77,7 +77,7 @@ The image is `og-tiler`, the environment variable `OG_TILER_IMAGE` sets another 
 
 `earth` and `epsg4326` reproject the files by `gdalwarp` to EPSG:3857 or EPSG:4326 of the Earth, then `rio rgbify` and `gdal2tiles` make the tiles. A file of another planet is given there with `--b`, then it is taken as the longitudes and latitudes of the bounds. The cube tiles are made by `cube2tiles.py` in the CRS of the file itself, so they fit any planet.
 
-**Every file** is cut into `<dest>/__temp__` first, then `mergeFolders` merges the tiles into `<dest>`, then the temporary data is removed. The files go by their names, every next file is merged over the ones before. When one file must be over another one, as a more detailed DEM over a global one, they are given by two commands, the second one after the first.
+**Every file** is cut into `<dest>/__temp__` first, then `mergeTiles` merges the tiles into `<dest>`, then the temporary data is removed. The files go by their names, every next file is merged over the ones before. When one file must be over another one, as a more detailed DEM over a global one, they are given by two commands, the second one after the first.
 
 ---
 
@@ -161,8 +161,8 @@ The tiles are WebP by default. A destination that has tiles already keeps their 
 ```
 
 - The heights are lossless WebP, the decoded rgb is exactly the png one (the rgb of no data under alpha 0 too). The tiles are about 2/3 of the png size and are written faster.
-- The imagery is lossless too, or lossy with `--quality 1..100`: about 1/3 of the png size at 90, 1/5 at 80. A lossy tile is encoded again when `mergeFolders` updates it. A gray image is written as rgb, WebP has no gray.
-- One tile set is either png or webp: `mergeFolders` takes the format by the file extension, does not convert one to the other and stops with an error on the folders of the other formats.
+- The imagery is lossless too, or lossy with `--quality 1..100`: about 1/3 of the png size at 90, 1/5 at 80. A lossy tile is encoded again when `mergeTiles` updates it. A gray image is written as rgb, WebP has no gray.
+- One tile set is either png or webp: `mergeTiles` takes the format by the file extension, does not convert one to the other and stops with an error on the folders of the other formats.
 - OpenGlobus loads them as any image, by `createImageBitmap` of the browser, the url is `./sat/{f}/{z}/{x}/{y}.webp`. `RgbTerrain` and `CubeRgbTerrain` read the webp heights as the png ones, `MapterhornTerrain` uses webp too.
 
 ---
@@ -194,19 +194,19 @@ docker run -ti -v /media:/terrain og-tiler
 Then merge tiles:
 
 ```bash
-./mergeFolders /terrain/heights/public/eu10/ /terrain/heights/public/all/
+./mergeTiles /terrain/heights/public/eu10/ /terrain/heights/public/all/
 ```
 
 Imagery tiles are merged by the alpha:
 
 ```bash
-./mergeFolders /terrain/sat/new/ /terrain/sat/all/ --alpha
+./mergeTiles /terrain/sat/new/ /terrain/sat/all/ --alpha
 ```
 
 The tiles are `.png` or `.webp`, both folders have the same format, otherwise nothing is merged and the exit code is 1. WebP is written lossless, the imagery can be lossy:
 
 ```bash
-./mergeFolders /terrain/sat/new/ /terrain/sat/all/ --alpha --quality 85
+./mergeTiles /terrain/sat/new/ /terrain/sat/all/ --alpha --quality 85
 ```
 
 How the new tiles go in: a tile or a folder the tile set does not have yet is moved there as it is. A tile the tile set has already is merged pixel by pixel: the new pixel replaces the old one, except when the new pixel has no data, then the old pixel stays. No data is a transparent pixel (alpha 0), and for the heights also the height `minHeight` (rgb 0) or exactly 0. So a new source changes only the place it covers.
@@ -217,7 +217,7 @@ The tiles of both folders are merged by several threads, the cpus of the process
 
 The tiles and the folders the tile set has not yet are moved (renamed), so the new tiles and the tile set must be on one disk. A tile that can not be decoded or encoded is reported on the screen, the merge goes on.
 
-`mergeFolders` is built from `main.cpp` by the `Makefile` in the Docker image, with libwebp linked statically.
+`mergeTiles` is built from `main.cpp` by the `Makefile` in the Docker image, with libwebp linked statically.
 
 ---
 

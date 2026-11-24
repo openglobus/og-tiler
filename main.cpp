@@ -1,14 +1,14 @@
 /**
- * mergeFolders merges new tiles (.png or .webp) into a tile set: the new tiles are moved in, the tiles that are
+ * mergeTiles merges new tiles (.png or .webp) into a tile set: the new tiles are moved in, the tiles that are
  * already there are updated where the new ones have data.
  *
  * Build: make build
  *
  * Run:
- * ./mergeFolders <new tiles> <tile set> [minHeight resolution] [--alpha] [--quality 1..100] [--threads N]
+ * ./mergeTiles <new tiles> <tile set> [minHeight resolution] [--alpha] [--quality 1..100] [--threads N]
  *
- * Heights:   ./mergeFolders ./dem/__temp__ ./dem -10000 0.1
- * Imagery:   ./mergeFolders ./sat/__temp__ ./sat --alpha
+ * Heights:   ./mergeTiles ./dem/__temp__ ./dem -10000 0.1
+ * Imagery:   ./mergeTiles ./sat/__temp__ ./sat --alpha
  */
 #include "lodepng.h"
 
@@ -511,13 +511,13 @@ int main(int argc, char *argv[])
 
     if (args.size() < 2)
     {
-        std::cout << "Usage: ./mergeFolders <new tiles> <tile set> [minHeight resolution] [--alpha] [--quality 1..100] "
+        std::cout << "Usage: ./mergeTiles <new tiles> <tile set> [minHeight resolution] [--alpha] [--quality 1..100] "
                      "[--threads N]"
                   << '\n';
         return 1;
     }
 
-    std::cout << "Merge folders:..." << '\n';
+    std::cout << "Merge tiles:..." << '\n';
     std::fflush(stdout);
 
     const char *srcPath = args[0], *dstPath = args[1];

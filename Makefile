@@ -2,7 +2,7 @@ CXX = g++
 CXXFLAGS = -std=c++17 -Wall -Wextra
 LDFLAGS = -lstdc++fs -l:libwebp.a -lpthread
 SOURCES = main.cpp lodepng.cpp
-TARGET = mergeFolders
+TARGET = mergeTiles
 IMAGE = og-tiler
 
 build: CXXFLAGS += -O2

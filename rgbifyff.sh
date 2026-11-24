@@ -3,7 +3,7 @@
 # Makes the tiles of the GeoTIFFs of a folder and merges them into a tile set, file by file. It runs in the og-tiler
 # image, tif2tiles.sh starts it, the options are the same, see ./tif2tiles.sh --help.
 #
-# Every file is cut into <dest>/__temp__ first, then mergeFolders merges the tiles into <dest>, then the temporary data
+# Every file is cut into <dest>/__temp__ first, then mergeTiles merges the tiles into <dest>, then the temporary data
 # (<dest>/__temp__ and ./temp of the container) is removed. The files go by their names.
 #
 #   earth, epsg4326: gdalwarp to EPSG:3857 or EPSG:4326, rio rgbify of the heights, gdal2tiles
@@ -215,9 +215,9 @@ for f in "${files[@]}"; do
 
     echo "...MERGING:"
     if [ "$norgbify" = false ]; then
-        ./mergeFolders $dest/__temp__ $dest $h $r || exit 1
+        ./mergeTiles $dest/__temp__ $dest $h $r || exit 1
     else
-        ./mergeFolders $dest/__temp__ $dest --alpha ${quality:+--quality $quality} || exit 1
+        ./mergeTiles $dest/__temp__ $dest --alpha ${quality:+--quality $quality} || exit 1
     fi
 
     rm -rf $dest/__temp__ ./temp

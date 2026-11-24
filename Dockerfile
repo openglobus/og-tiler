@@ -18,6 +18,6 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y --fix-missing pyt
 RUN pip3 install rasterio rio-rgbify "numpy<2"
 RUN wget https://download.osgeo.org/proj/vdatum/egm08_25/egm08_25.gtx
 ADD ./rgbifyff.sh .
-COPY --from=build /build/mergeFolders .
+COPY --from=build /build/mergeTiles .
 ADD ./cube2tiles.py .
 RUN cp ./egm08_25.gtx /usr/share/gdal

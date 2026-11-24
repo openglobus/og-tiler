@@ -10,7 +10,7 @@ Thumbs.db
 __pycache__/
 *.py[cod]
 
-/mergeFolders
+/mergeTiles
 
 temp/
 _temp_*/

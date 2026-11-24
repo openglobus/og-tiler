@@ -29,7 +29,7 @@ gdal.PushErrorHandler("CPLQuietErrorHandler")
 TILE_SIZE = 256
 TILE_SIZES = (128, 256, 512)
 
-# Lossless webp effort, the same as mergeFolders writes: about 2/3 of the png size and faster than png
+# Lossless webp effort, the same as mergeTiles writes: about 2/3 of the png size and faster than png
 WEBP_LOSSLESS_QUALITY = 25
 WEBP_LOSSLESS_METHOD = 1
 
@@ -673,7 +673,7 @@ class Tiler:
         elif self.opts.encoding == "image" and self.opts.quality:
             rgba.save(path, "WEBP", quality=self.opts.quality, method=4)
         else:
-            # exact keeps the rgb 0 of no data, the same effort as mergeFolders writes
+            # exact keeps the rgb 0 of no data, the same effort as mergeTiles writes
             rgba.save(path, "WEBP", lossless=True, exact=True, quality=WEBP_LOSSLESS_QUALITY, method=WEBP_LOSSLESS_METHOD)
 
     def make_tile(self, tile):

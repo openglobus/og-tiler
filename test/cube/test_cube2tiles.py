@@ -1,5 +1,5 @@
 """
-Tests of cube2tiles.py and mergeFolders, in the og-tiler image (make test):
+Tests of cube2tiles.py and mergeTiles, in the og-tiler image (make test):
     docker run --rm -v $PWD:/repo -w /repo og-tiler python3 test/cube/test_cube2tiles.py
 """
 
@@ -105,7 +105,7 @@ def make_source(path, width=720, height=360, crs="+proj=longlat +R=1737400 +no_d
 
 
 def read_rgba(path):
-    """RGBA pixels of a tile of any color type, lodepng of mergeFolders writes the smallest one of png."""
+    """RGBA pixels of a tile of any color type, lodepng of mergeTiles writes the smallest one of png."""
     from PIL import Image
 
     return np.asarray(Image.open(path).convert("RGBA"))
@@ -379,7 +379,7 @@ def test_global_source_takes_every_tile():
 
 
 def merge_folders_binary():
-    for path in (os.environ.get("MERGE_FOLDERS"), "/work/mergeFolders"):
+    for path in (os.environ.get("MERGE_TILES"), "/work/mergeTiles"):
         if path and os.path.exists(path):
             return path
     return None
@@ -393,7 +393,7 @@ def test_merge_updates_only_the_new_data():
 
     merge = merge_folders_binary()
     if merge is None:
-        print("skip: no mergeFolders, set MERGE_FOLDERS")
+        print("skip: no mergeTiles, set MERGE_TILES")
         return
 
     with tempfile.TemporaryDirectory() as tmp:
@@ -477,7 +477,7 @@ def test_merge_pixel_rules():
 
     merge = merge_folders_binary()
     if merge is None:
-        print("skip: no mergeFolders, set MERGE_FOLDERS")
+        print("skip: no mergeTiles, set MERGE_TILES")
         return
 
     def code(h):
@@ -516,7 +516,7 @@ def test_merge_threads_give_the_same_tiles():
 
     merge = merge_folders_binary()
     if merge is None:
-        print("skip: no mergeFolders, set MERGE_FOLDERS")
+        print("skip: no mergeTiles, set MERGE_TILES")
         return
 
     with tempfile.TemporaryDirectory() as tmp:
@@ -548,7 +548,7 @@ def test_merge_refuses_the_other_format():
 
     merge = merge_folders_binary()
     if merge is None:
-        print("skip: no mergeFolders, set MERGE_FOLDERS")
+        print("skip: no mergeTiles, set MERGE_TILES")
         return
 
     with tempfile.TemporaryDirectory() as tmp:
