@@ -186,6 +186,61 @@ def test_projected_source_is_the_same_as_geographic():
                 assert np.max(np.abs(hg - he)) < 0.11, (face, z, x, y)
 
 
+def test_projected_source_east_of_180():
+    """
+    The simple cylindrical meters of a source from 180 to 270 east, as the WAC_EMP files of the Moon: the longitudes
+    of the cube from -180 to 180 are taken on its side of 180.
+    """
+    import rasterio
+    from rasterio.transform import from_bounds
+
+    with tempfile.TemporaryDirectory() as tmp:
+        src = os.path.join(tmp, "east.tif")
+        width, height = 180, 240
+        lon = 180 + (np.arange(width) + 0.5) * 90.0 / width
+        lat = 60 - (np.arange(height) + 0.5) * 120.0 / height
+        h = (10.0 * (lon[None, :] - 180.0) + lat[:, None]).astype(np.float32)
+        m = 1737400 * np.pi / 180.0
+        with rasterio.open(
+            src,
+            "w",
+            driver="GTiff",
+            width=width,
+            height=height,
+            count=1,
+            dtype="float32",
+            crs="+proj=eqc +lat_ts=0 +lat_0=0 +lon_0=0 +x_0=0 +y_0=0 +R=1737400 +units=m +no_defs",
+            transform=from_bounds(180 * m, -60 * m, 270 * m, 60 * m, width, height),
+            nodata=-32768,
+        ) as d:
+            d.write(h, 1)
+        dest = os.path.join(tmp, "out")
+        ct.main([src, dest, "--zoom", "0-2", "--cube", "equiangular", "--resampling", "near", "-p", "1"])
+
+        # 180..270 east is the east half of the face 3 and the west half of the face 4, and the corners of the poles
+        assert sorted(os.listdir(dest)) == ["0", "3", "4", "5"], os.listdir(dest)
+        _, alpha = decode_rgb(os.path.join(dest, "4", "0", "0", "0.webp"))
+        assert 0.4 < np.mean(alpha == 255) < 0.6, np.mean(alpha == 255)
+
+        tiles = 0
+        for face in os.listdir(dest):
+            for z in os.listdir(os.path.join(dest, face)):
+                for x in os.listdir(os.path.join(dest, face, z)):
+                    for name in os.listdir(os.path.join(dest, face, z, x)):
+                        y = int(name.split(".")[0])
+                        hv, alpha = decode_rgb(os.path.join(dest, face, z, x, name))
+                        a, b = ct.tile_positions(int(x), y, int(z), hv.shape[0])
+                        tlon, tlat = ct.face_to_lonlat(int(face), a, b, True)
+                        expected = 10.0 * (np.mod(tlon, 360.0) - 180.0) + tlat
+                        ok = alpha == 255
+                        assert np.any(ok), (face, z, x, y)
+                        # A half degree pixel is up to 2.5 m + 0.25 m off, and the 0.1 m encoding step
+                        err = np.abs(hv - expected)[ok]
+                        assert np.max(err) < 2.9, (face, z, x, y, np.max(err))
+                        tiles += 1
+        assert tiles > 10, tiles
+
+
 def test_scaled_source_is_in_meters():
     import rasterio
 
