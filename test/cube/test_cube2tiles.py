@@ -241,6 +241,57 @@ def test_projected_source_east_of_180():
         assert tiles > 10, tiles
 
 
+def test_source_edges_on_the_low_zooms():
+    """
+    A low zoom pixel is the area average of the source pixels. It is the pixel of the source its center is in, so a
+    file does not take the pixels of the next one it only touches, as the WAC_EMP files of the Moon at 0 east. The area
+    of a pixel at the west edge of a source from 0, 180 or 270 east is its own, not the one over 360 degrees.
+    """
+    import rasterio
+    from rasterio.transform import from_bounds
+
+    m = 1737400 * np.pi / 180.0
+    ppd = 4
+    with tempfile.TemporaryDirectory() as tmp:
+        for west in (0, 180, 270):
+            east = west + 90
+            width, height = 90 * ppd, 120 * ppd
+            lon = west + (np.arange(width) + 0.5) / ppd
+            lat = 60 - (np.arange(height) + 0.5) / ppd
+            src = os.path.join(tmp, f"src{west}.tif")
+            with rasterio.open(
+                src,
+                "w",
+                driver="GTiff",
+                width=width,
+                height=height,
+                count=1,
+                dtype="float32",
+                crs="+proj=eqc +lat_ts=0 +lat_0=0 +lon_0=0 +x_0=0 +y_0=0 +R=1737400 +units=m +no_defs",
+                transform=from_bounds(west * m, -60 * m, east * m, 60 * m, width, height),
+                nodata=-32768,
+            ) as d:
+                d.write((10.0 * (lon[None, :] - west) + lat[:, None]).astype(np.float32), 1)
+            dest = os.path.join(tmp, f"out{west}")
+            ct.main([src, dest, "--zoom", "0-1", "--cube", "equiangular", "--tile-size", "128", "-p", "1"])
+
+            for face in os.listdir(dest):
+                for z in os.listdir(os.path.join(dest, face)):
+                    for x in os.listdir(os.path.join(dest, face, z)):
+                        for name in os.listdir(os.path.join(dest, face, z, x)):
+                            y = int(name.split(".")[0])
+                            hv, alpha = decode_rgb(os.path.join(dest, face, z, x, name))
+                            a, b = ct.tile_positions(int(x), y, int(z), hv.shape[0])
+                            tlon, tlat = ct.face_to_lonlat(int(face), a, b, True)
+                            elon = west + np.mod(tlon - west, 360.0)
+                            ok = alpha == 255
+                            where = (west, face, z, x, y)
+                            assert np.all(elon[ok] <= east + 1e-9) and np.all(np.abs(tlat[ok]) <= 60 + 1e-9), where
+                            # A box of a linear h is its center value, at the edges it is off by its half
+                            err = np.abs(hv - (10.0 * (elon - west) + tlat))[ok]
+                            assert np.max(err) < 10.0, (where, np.max(err))
+
+
 def test_scaled_source_is_in_meters():
     import rasterio
 

@@ -215,6 +215,15 @@ class Source:
         period = abs(c1[0] - c0[0]) * 360.0
         self.wrap = bool(np.isfinite(period) and abs(period - self.width) < 1.5)
 
+        # Columns of 360 degrees: the longitudes of a geographic or equirectangular source go on from its west edge,
+        # the columns jump by it there
+        self.period = float(self.width) if self.wrap else None
+        if not self.projected:
+            self.period = self.period or 360.0 / abs(self.transform.a)
+        elif self.eqc is not None:
+            a, _, lat_ts, _, _, _ = self.eqc
+            self.period = self.period or 2.0 * np.pi * a * np.cos(np.radians(lat_ts)) / abs(self.transform.a)
+
     def equirectangular(self, srs):
         if (srs.GetAttrValue("PROJECTION") or "").lower() != "equirectangular":
             return None
@@ -514,7 +523,7 @@ class Tiler:
         fx = pow2_floor(np.nanpercentile(dc, 10))
         fy = pow2_floor(np.nanpercentile(dr, 10))
 
-        period = s.width if s.wrap else None
+        period = s.period
         half_c = np.hypot(pixel_steps(cols, 1, period), pixel_steps(cols, 0, period)) / 2.0
         half_r = np.hypot(pixel_steps(rows, 1), pixel_steps(rows, 0)) / 2.0
         half_c = np.where(good & np.isfinite(half_c), half_c, 0.0)
@@ -559,6 +568,13 @@ class Tiler:
             big = good.ravel() & ((hu > 0.5) | (hv > 0.5))
             if np.any(big):
                 values[:, big], ok[big] = area_average(data, valid, u[big], v[big], hu[big], hv[big])
+
+        # Along each side the center of the pixel is in the source or the center of the source is in the pixel: a file
+        # does not take the pixels of the next one it only touches, a file smaller than a pixel is in the pixel
+        with np.errstate(invalid="ignore"):
+            on_c = s.wrap | ((cols >= 0) & (cols <= s.width)) | (np.abs(cols - s.width / 2.0) <= half_c)
+            on_r = ((rows >= 0) & (rows <= s.height)) | (np.abs(rows - s.height / 2.0) <= half_r)
+        ok &= (good & on_c & on_r).ravel()
 
         if not np.any(ok):
             return None
